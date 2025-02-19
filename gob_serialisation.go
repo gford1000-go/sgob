@@ -138,22 +138,16 @@ func (g *gobApproachV1) toGobDataBytes(data any) (*gobData, error) {
 
 	var buf bytes.Buffer
 
-	switch v := data.(type) {
+	switch data.(type) {
 	case []byte, int8, *int8, []int8, int16, *int16, []int16, int32, *int32, []int32, int64, *int64, []int64,
 		uint8, *uint8, uint16, *uint16, []uint16, uint32, *uint32, []uint32, uint64, *uint64, []uint64,
 		float32, *float32, []float32, float64, *float64, []float64, bool, *bool, []bool, string, *string,
-		time.Duration, *time.Duration, []time.Duration, []string, [][]byte:
+		time.Duration, *time.Duration, []time.Duration, time.Time, *time.Time, []string, [][]byte:
 		b, err := g.md.Pack(data)
 		if err != nil {
 			return nil, err
 		}
 		return &gobData{DataType: minDataV1Type, Data: b}, nil
-	case time.Time:
-		b, err := v.GobEncode()
-		return &gobData{DataType: timeType, Data: b}, err
-	case *time.Time:
-		b, err := v.GobEncode()
-		return &gobData{DataType: ptimeType, Data: b}, err
 	default:
 		encoder := gob.NewEncoder(&buf)
 		err := encoder.Encode(data)
@@ -186,30 +180,6 @@ func (g *gobApproachV1) fromGobDataBytes(data *gobData) (any, error) {
 	switch data.DataType {
 	case minDataV1Type:
 		return g.md.Unpack(data.Data)
-	case timeType:
-		var buf = bytes.NewBuffer(data.Data)
-
-		decoder := gob.NewDecoder(buf)
-
-		var v time.Time
-		err := decoder.Decode(&v)
-		if err != nil {
-			return nil, err
-		}
-
-		return v, nil
-	case ptimeType:
-		var buf = bytes.NewBuffer(data.Data)
-
-		decoder := gob.NewDecoder(buf)
-
-		var v = new(time.Time)
-		err := decoder.Decode(v)
-		if err != nil {
-			return nil, err
-		}
-
-		return v, nil
 	case gobType:
 
 		var buf = bytes.NewBuffer(data.Data)
